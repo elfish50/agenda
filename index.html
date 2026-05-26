@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Agenda Quirúrgica — JFP Group</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #0A1E2C;
+  --navy2: #112435;
+  --steel: #1C3A52;
+  --blue: #2E7CB8;
+  --blue-light: #3D96D8;
+  --teal: #1D9E75;
+  --teal-light: #E1F5EE;
+  --amber: #E8A030;
+  --amber-light: #FEF3DC;
+  --red: #E24B4A;
+  --red-light: #FCEBEB;
+  --slate: #8AAEC8;
+  --slate-dim: rgba(138,174,200,0.15);
+  --white: #F4F7FA;
+  --white-dim: rgba(244,247,250,0.06);
+  --border: rgba(138,174,200,0.18);
+  --border-strong: rgba(138,174,200,0.32);
+  --text: #E8EFF5;
+  --text-dim: #8AAEC8;
+  --text-muted: rgba(138,174,200,0.55);
+  --radius: 14px;
+  --radius-sm: 8px;
+  --font: 'DM Sans', sans-serif;
+  --mono: 'DM Mono', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; font-family: var(--font); background: var(--navy); color: var(--text); overflow-x: hidden; }
+
+/* LAYOUT */
+.app { min-height: 100vh; display: flex; flex-direction: column; }
+
+/* HEADER */
+.header {
+  background: var(--navy2);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 20px 14px;
+  position: sticky; top: 0; z-index: 100;
+  backdrop-filter: blur(12px);
+}
+.header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.logo { display: flex; align-items: center; gap: 10px; }
+.logo-mark { display: flex; flex-direction: column; gap: 3px; }
+.logo-line { height: 2.5px; border-radius: 2px; background: var(--slate); }
+.logo-line:first-child { width: 22px; }
+.logo-line:last-child { width: 22px; opacity: 0.36; }
+.logo-text { font-size: 15px; font-weight: 600; letter-spacing: -0.3px; }
+.logo-sub { font-size: 11px; color: var(--text-dim); font-weight: 400; }
+.header-actions { display: flex; gap: 8px; }
+.btn-icon { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border); background: transparent; color: var(--text-dim); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: all .15s; }
+.btn-icon:hover { background: var(--slate-dim); color: var(--text); border-color: var(--border-strong); }
+
+/* TABS */
+.tabs { display: flex; gap: 4px; background: var(--slate-dim); border-radius: 10px; padding: 3px; }
+.tab { flex: 1; padding: 7px 4px; border-radius: 7px; font-size: 12px; font-weight: 500; text-align: center; cursor: pointer; color: var(--text-dim); border: none; background: transparent; transition: all .15s; }
+.tab.on { background: var(--steel); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,.4); }
+
+/* BODY */
+.body { flex: 1; padding: 16px 20px 100px; overflow-y: auto; }
+
+/* PANEL */
+.panel { display: none; }
+.panel.show { display: block; }
+
+/* MONTH NAV */
+.month-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.month-title { font-size: 18px; font-weight: 600; }
+.nav-btn { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border); background: transparent; color: var(--text-dim); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+.nav-btn:hover { background: var(--slate-dim); }
+
+/* CALENDAR */
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-bottom: 16px; }
+.cal-dow { text-align: center; font-size: 10px; font-weight: 500; color: var(--text-muted); padding: 4px 0 6px; text-transform: uppercase; letter-spacing: .05em; }
+.cal-day { aspect-ratio: 1; border-radius: var(--radius-sm); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; border: 1px solid transparent; transition: all .12s; gap: 2px; }
+.cal-day:hover { background: var(--slate-dim); }
+.cal-day.today { border-color: var(--blue); }
+.cal-day.selected { background: var(--blue); color: #fff; }
+.cal-day.other-month { opacity: 0.3; }
+.cal-day .dn { font-size: 13px; font-weight: 500; }
+.cal-day .dots { display: flex; gap: 2px; }
+.cal-dot { width: 4px; height: 4px; border-radius: 50%; }
+
+/* SURGERY CARDS */
+.section-lbl { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 10px; margin-top: 4px; }
+.surg-card {
+  background: var(--navy2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: border-color .15s;
+}
+.surg-card:hover { border-color: var(--border-strong); }
+.surg-card.confirmed { border-left: 3px solid var(--teal); }
+.surg-card.pending { border-left: 3px solid var(--amber); }
+.surg-card.cancelled { border-left: 3px solid var(--red); opacity: .6; }
+.surg-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; }
+.surg-patient { font-size: 15px; font-weight: 600; }
+.surg-diag { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+.surg-badge { font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 20px; white-space: nowrap; }
+.badge-confirmed { background: var(--teal-light); color: #085041; }
+.badge-pending { background: var(--amber-light); color: #7A4500; }
+.badge-cancelled { background: var(--red-light); color: #791F1F; }
+.surg-meta { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; color: var(--text-dim); }
+.surg-meta span { display: flex; align-items: center; gap: 4px; }
+.surg-meta i { font-size: 11px; }
+.surg-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+.avatars { display: flex; gap: -4px; }
+.av { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 600; border: 1.5px solid var(--navy2); margin-right: -6px; }
+.av-yes { background: var(--teal); color: #fff; }
+.av-no { background: var(--red); color: #fff; }
+.av-maybe { background: var(--amber); color: #fff; }
+.av-none { background: var(--steel); color: var(--text-dim); }
+.surg-hon { font-family: var(--mono); font-size: 12px; color: var(--slate); }
+
+/* FAB */
+.fab {
+  position: fixed; bottom: 88px; right: 20px; z-index: 200;
+  width: 56px; height: 56px; border-radius: 50%;
+  background: var(--blue); color: #fff;
+  border: none; cursor: pointer; font-size: 24px;
+  box-shadow: 0 4px 20px rgba(46,124,184,.5);
+  display: flex; align-items: center; justify-content: center;
+  transition: transform .15s, background .15s;
+}
+.fab:hover { transform: scale(1.05); background: var(--blue-light); }
+
+/* BOTTOM NAV */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+  background: var(--navy2);
+  border-top: 1px solid var(--border);
+  display: flex; padding: 8px 0 env(safe-area-inset-bottom,8px);
+}
+.bn-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 0; cursor: pointer; border: none; background: transparent; color: var(--text-muted); transition: color .12s; }
+.bn-item.on { color: var(--blue-light); }
+.bn-item i { font-size: 20px; }
+.bn-item span { font-size: 9px; font-weight: 500; text-transform: uppercase; letter-spacing: .05em; }
+
+/* MODAL */
+.overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 300; align-items: flex-end; justify-content: center; }
+.overlay.show { display: flex; }
+.modal {
+  background: var(--navy2);
+  border-radius: 24px 24px 0 0;
+  border: 1px solid var(--border);
+  width: 100%; max-height: 92vh;
+  overflow-y: auto;
+  padding: 0 0 40px;
+  animation: slideUp .2s ease;
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.modal-handle { width: 36px; height: 4px; background: var(--border-strong); border-radius: 2px; margin: 12px auto 0; }
+.modal-header { padding: 16px 20px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.modal-title { font-size: 16px; font-weight: 600; }
+.modal-body { padding: 16px 20px; }
+.modal-close { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border); background: transparent; color: var(--text-dim); cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+
+/* FORM */
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 12px; font-weight: 500; color: var(--text-dim); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .05em; }
+.field input, .field select, .field textarea {
+  width: 100%; background: var(--steel); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text);
+  padding: 10px 12px; font-size: 14px; font-family: var(--font);
+  outline: none; transition: border-color .15s;
+}
+.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--blue); }
+.field textarea { resize: none; height: 72px; }
+.field select option { background: var(--navy); }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.btn-primary {
+  width: 100%; padding: 14px; border-radius: var(--radius-sm);
+  background: var(--blue); color: #fff; font-size: 14px; font-weight: 600;
+  border: none; cursor: pointer; margin-top: 8px;
+  transition: background .15s;
+}
+.btn-primary:hover { background: var(--blue-light); }
+.btn-secondary {
+  width: 100%; padding: 12px; border-radius: var(--radius-sm);
+  background: transparent; color: var(--text-dim); font-size: 14px; font-weight: 500;
+  border: 1px solid var(--border); cursor: pointer; margin-top: 8px;
+}
+
+/* RESPONSE BUTTONS */
+.response-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 12px 0; }
+.resp-btn { padding: 10px 6px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: transparent; color: var(--text-dim); font-size: 12px; font-weight: 500; cursor: pointer; text-align: center; transition: all .12s; }
+.resp-btn.yes { border-color: var(--teal); background: rgba(29,158,117,.12); color: var(--teal); }
+.resp-btn.no { border-color: var(--red); background: rgba(226,75,74,.12); color: var(--red); }
+.resp-btn.maybe { border-color: var(--amber); background: rgba(232,160,48,.12); color: var(--amber); }
+
+/* SURGEON CHECKLIST */
+.surg-check { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.surg-check:last-child { border-bottom: none; }
+.surg-check-name { font-size: 13px; display: flex; align-items: center; gap: 8px; }
+.surg-check-status { font-size: 11px; font-weight: 600; }
+
+/* STATS */
+.stats-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; margin-bottom: 16px; }
+.stat-card { background: var(--navy2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+.stat-lbl { font-size: 11px; color: var(--text-dim); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .05em; }
+.stat-val { font-size: 26px; font-weight: 600; }
+.stat-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+.empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+.empty-icon { font-size: 40px; margin-bottom: 12px; }
+.empty-title { font-size: 15px; font-weight: 500; color: var(--text-dim); margin-bottom: 6px; }
+.empty-desc { font-size: 13px; line-height: 1.5; }
+
+/* DETAIL sections */
+.detail-section { margin-bottom: 16px; }
+.detail-section-title { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
+.detail-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.detail-row:last-child { border-bottom: none; }
+.detail-row .dk { color: var(--text-dim); }
+.detail-row .dv { font-weight: 500; text-align: right; }
+.wa-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px; border-radius: var(--radius-sm); background: #25D366; color: #fff; font-size: 13px; font-weight: 600; border: none; cursor: pointer; margin-top: 8px; }
+
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+.chip-teal { background: var(--teal-light); color: #085041; }
+.chip-blue { background: rgba(46,124,184,.2); color: var(--blue-light); }
+.chip-amber { background: var(--amber-light); color: #7A4500; }
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-top">
+      <div class="logo">
+        <div class="logo-mark">
+          <div class="logo-line"></div>
+          <div class="logo-line"></div>
+        </div>
+        <div>
+          <div class="logo-text">Agenda Quirúrgica</div>
+          <div class="logo-sub">JFP Group · Clínica B</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn-icon" onclick="openNotify()" title="Notificar grupo"><i class="ti ti-brand-whatsapp"></i></button>
+        <button class="btn-icon" onclick="showTab('stats')" title="Estadísticas"><i class="ti ti-chart-bar"></i></button>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="tab on" onclick="showTab('calendar')">Calendario</button>
+      <button class="tab" onclick="showTab('list')">Lista</button>
+      <button class="tab" onclick="showTab('stats')">Resumen</button>
+    </div>
+  </header>
+
+  <!-- BODY -->
+  <main class="body">
+
+    <!-- CALENDAR TAB -->
+    <div class="panel show" id="panel-calendar">
+      <div class="month-nav">
+        <button class="nav-btn" onclick="prevMonth()"><i class="ti ti-chevron-left"></i></button>
+        <div class="month-title" id="month-title"></div>
+        <button class="nav-btn" onclick="nextMonth()"><i class="ti ti-chevron-right"></i></button>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+      <div id="day-surgeries"></div>
+    </div>
+
+    <!-- LIST TAB -->
+    <div class="panel" id="panel-list">
+      <div id="list-content"></div>
+    </div>
+
+    <!-- STATS TAB -->
+    <div class="panel" id="panel-stats">
+      <div class="stats-grid" id="stats-grid"></div>
+      <div id="stats-surgeons"></div>
+    </div>
+
+  </main>
+
+  <!-- FAB -->
+  <button class="fab" onclick="openNewSurgery()" title="Nueva cirugía">
+    <i class="ti ti-plus"></i>
+  </button>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <button class="bn-item on" id="bn-calendar" onclick="showTab('calendar')">
+      <i class="ti ti-calendar"></i><span>Calendario</span>
+    </button>
+    <button class="bn-item" id="bn-list" onclick="showTab('list')">
+      <i class="ti ti-list"></i><span>Lista</span>
+    </button>
+    <button class="bn-item" id="bn-stats" onclick="showTab('stats')">
+      <i class="ti ti-chart-bar"></i><span>Resumen</span>
+    </button>
+  </nav>
+
+</div>
+
+<!-- MODAL: NUEVA CIRUGÍA -->
+<div class="overlay" id="modal-new">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="modal-new-title">Nueva Cirugía</div>
+      <button class="modal-close" onclick="closeModal('modal-new')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Paciente</label>
+        <input type="text" id="f-patient" placeholder="Nombre completo">
+      </div>
+      <div class="field">
+        <label>Diagnóstico / Procedimiento</label>
+        <input type="text" id="f-diag" placeholder="Ej. Fractura diafisaria tibia derecha">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Fecha</label>
+          <input type="date" id="f-date">
+        </div>
+        <div class="field">
+          <label>Hora</label>
+          <input type="time" id="f-time" value="08:00">
+        </div>
+      </div>
+      <div class="field">
+        <label>Hospital / Quirófano</label>
+        <input type="text" id="f-hospital" placeholder="Ej. Hospital Ángeles Interlomas Q3">
+      </div>
+      <div class="field">
+        <label>Cirujano principal</label>
+        <select id="f-principal"></select>
+      </div>
+      <div class="field">
+        <label>Honorario base del principal (MXN)</label>
+        <input type="number" id="f-honorario" placeholder="40000" min="0">
+      </div>
+      <div class="field">
+        <label>Notas adicionales</label>
+        <textarea id="f-notas" placeholder="Implantes requeridos, consideraciones especiales..."></textarea>
+      </div>
+      <button class="btn-primary" onclick="saveSurgery()">
+        <i class="ti ti-check"></i> Guardar cirugía
+      </button>
+      <button class="btn-secondary" onclick="closeModal('modal-new')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: DETALLE CIRUGÍA -->
+<div class="overlay" id="modal-detail">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="detail-title">Detalle</div>
+      <button class="modal-close" onclick="closeModal('modal-detail')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body" id="detail-body"></div>
+  </div>
+</div>
+
+<!-- MODAL: CONFIRMACIÓN RÁPIDA (desde link WA) -->
+<div class="overlay" id="modal-confirm">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title">¿Puedes asistir?</div>
+      <button class="modal-close" onclick="closeModal('modal-confirm')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div id="confirm-info" style="margin-bottom:16px;padding:12px;background:var(--steel);border-radius:var(--radius-sm);font-size:13px;line-height:1.7;"></div>
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em;font-weight:600;">Selecciona tu nombre</div>
+      <select id="confirm-surgeon" style="width:100%;background:var(--steel);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:10px 12px;font-size:14px;font-family:var(--font);margin-bottom:16px;"></select>
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em;font-weight:600;">Tu respuesta</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
+        <button onclick="quickConfirm('yes')" class="resp-btn yes" style="padding:16px 6px;font-size:14px;">✓<br><span style="font-size:11px">Sí asisto</span></button>
+        <button onclick="quickConfirm('maybe')" class="resp-btn maybe" style="padding:16px 6px;font-size:14px;">~<br><span style="font-size:11px">Tal vez</span></button>
+        <button onclick="quickConfirm('no')" class="resp-btn no" style="padding:16px 6px;font-size:14px;">✗<br><span style="font-size:11px">No puedo</span></button>
+      </div>
+      <div id="confirm-result" style="display:none;text-align:center;padding:16px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: NOTIFY -->
+<div class="overlay" id="modal-notify">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title">Notificar por WhatsApp</div>
+      <button class="modal-close" onclick="closeModal('modal-notify')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Mensaje a enviar</label>
+        <textarea id="wa-msg" style="height:120px;"></textarea>
+      </div>
+      <div id="wa-contacts"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA ────────────────────────────────────────────────────────────────────
+const SURGEONS = [
+  {id:'ay', name:'Dr. Adolfo Yañez',       initials:'AY', color:'#2E7CB8', bg:'#E6F1FB'},
+  {id:'jf', name:'Dr. Jorge Fishleder',    initials:'JF', color:'#1D9E75', bg:'#E1F5EE'},
+  {id:'aa', name:'Dr. Alejandro Aguilera', initials:'AA', color:'#D85A30', bg:'#FAECE7'},
+  {id:'sa', name:'Dr. Sebastian Armida',   initials:'SA', color:'#D4537E', bg:'#FBEAF0'},
+  {id:'sg', name:'Dr. Sebastian Gonzalez', initials:'SG', color:'#7F77DD', bg:'#EEEDFE'},
+];
+const PHONES = {ay:'525554193554', jf:'525611697595', aa:'525533339350', sa:'525522723053', sg:'525526996113'};
+
+let _memStore = null;
+function loadData() {
+  try {
+    const raw = localStorage.getItem('jfp_surgeries');
+    const parsed = raw ? JSON.parse(raw) : [];
+    _memStore = parsed;
+    return parsed;
+  } catch(e) {
+    return _memStore || [];
+  }
+}
+function saveData(d) {
+  _memStore = d;
+  try { localStorage.setItem('jfp_surgeries', JSON.stringify(d)); } catch(e) {}
+}
+let surgeries = loadData();
+
+let currentYear = new Date().getFullYear();
+let currentMonth = new Date().getMonth();
+let selectedDay = null;
+let editingId = null;
+let activeTab = 'calendar';
+
+const fmt = n => n ? '$'+Math.round(n).toLocaleString('es-MX') : '—';
+const fmtDate = d => { const dt=new Date(d+'T12:00:00'); return dt.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'}); };
+
+// ── TABS ─────────────────────────────────────────────────────────────────────
+function showTab(t) {
+  activeTab = t;
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('show'));
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.bn-item').forEach(b=>b.classList.remove('on'));
+  document.getElementById('panel-'+t).classList.add('show');
+  const tabs = document.querySelectorAll('.tab');
+  const tMap = {calendar:0,list:1,stats:2};
+  if(tMap[t]!==undefined) tabs[tMap[t]].classList.add('on');
+  const bn = document.getElementById('bn-'+t);
+  if(bn) bn.classList.add('on');
+  if(t==='list') renderList();
+  if(t==='stats') renderStats();
+  if(t==='calendar') renderCalendar();
+}
+
+// ── CALENDAR ─────────────────────────────────────────────────────────────────
+function renderCalendar() {
+  const months = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  document.getElementById('month-title').textContent = `${months[currentMonth]} ${currentYear}`;
+  const grid = document.getElementById('cal-grid');
+  const dows = ['Lu','Ma','Mi','Ju','Vi','Sa','Do'];
+  let html = dows.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  const first = new Date(currentYear, currentMonth, 1);
+  let startDow = first.getDay(); if(startDow===0) startDow=7; startDow--;
+  const daysInMonth = new Date(currentYear, currentMonth+1, 0).getDate();
+  const today = new Date();
+  for(let i=0;i<startDow;i++) {
+    const pm = new Date(currentYear, currentMonth, -startDow+1+i);
+    html += `<div class="cal-day other-month"><span class="dn">${pm.getDate()}</span></div>`;
+  }
+  for(let d=1;d<=daysInMonth;d++) {
+    const dateStr = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const daySurgs = surgeries.filter(s=>s.date===dateStr);
+    const isToday = today.getFullYear()===currentYear && today.getMonth()===currentMonth && today.getDate()===d;
+    const isSel = selectedDay===dateStr;
+    const dots = [...new Set(daySurgs.map(s=>s.status))].map(st=>`<div class="cal-dot" style="background:${st==='confirmed'?'var(--teal)':st==='pending'?'var(--amber)':'var(--red)'}"></div>`).join('');
+    html += `<div class="cal-day${isToday?' today':''}${isSel?' selected':''}" onclick="selectDay('${dateStr}')">
+      <span class="dn">${d}</span>
+      <div class="dots">${dots}</div>
+    </div>`;
+  }
+  grid.innerHTML = html;
+  renderDaySurgeries();
+}
+function selectDay(d) { selectedDay = (selectedDay===d)?null:d; renderCalendar(); }
+function prevMonth() { currentMonth--; if(currentMonth<0){currentMonth=11;currentYear--;} renderCalendar(); }
+function nextMonth() { currentMonth++; if(currentMonth>11){currentMonth=0;currentYear++;} renderCalendar(); }
+function renderDaySurgeries() {
+  const el = document.getElementById('day-surgeries');
+  const target = selectedDay ? surgeries.filter(s=>s.date===selectedDay) : surgeries.filter(s=>{
+    const d=new Date(s.date+'T12:00:00'); return d.getMonth()===currentMonth && d.getFullYear()===currentYear;
+  }).sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time));
+  el.innerHTML = `<div class="section-lbl">${selectedDay?fmtDate(selectedDay)+' — '+target.length+' cirugía(s)':'Este mes — '+target.length+' cirugía(s)'}</div>`;
+  if(!target.length){ el.innerHTML+=`<div class="empty-state"><div class="empty-icon">🗓</div><div class="empty-title">Sin cirugías</div><div class="empty-desc">Toca + para agregar una</div></div>`; return; }
+  el.innerHTML += target.map(s=>surgeryCard(s)).join('');
+}
+
+// ── LIST ─────────────────────────────────────────────────────────────────────
+function renderList() {
+  const sorted = [...surgeries].sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time));
+  const upcoming = sorted.filter(s=>s.date>=new Date().toISOString().slice(0,10));
+  const past = sorted.filter(s=>s.date<new Date().toISOString().slice(0,10));
+  let html = '';
+  if(upcoming.length) html += `<div class="section-lbl">Próximas (${upcoming.length})</div>${upcoming.map(s=>surgeryCard(s)).join('')}`;
+  if(past.length) html += `<div class="section-lbl" style="margin-top:16px">Pasadas (${past.length})</div>${past.map(s=>surgeryCard(s)).join('')}`;
+  if(!surgeries.length) html = `<div class="empty-state"><div class="empty-icon">🔬</div><div class="empty-title">Sin cirugías registradas</div><div class="empty-desc">Comienza agregando la primera</div></div>`;
+  document.getElementById('list-content').innerHTML = html;
+}
+
+// ── SURGERY CARD ─────────────────────────────────────────────────────────────
+function surgeryCard(s) {
+  const principal = SURGEONS.find(x=>x.id===s.principalId)||{initials:'?',color:'#888',bg:'#eee',name:'?'};
+  const responses = s.responses||{};
+  const avatars = SURGEONS.map(sg=>{
+    const r=responses[sg.id]||'none';
+    const cls=r==='yes'?'av-yes':r==='no'?'av-no':r==='maybe'?'av-maybe':'av-none';
+    return `<div class="av ${cls}" style="${r==='none'?'':'border-color:var(--navy2)'}" title="${sg.name}: ${r==='yes'?'Confirmado':r==='no'?'No asiste':r==='maybe'?'Tentativo':'Sin respuesta'}">${sg.initials}</div>`;
+  }).join('');
+  const hon = s.honorario ? fmt(s.honorario) : '—';
+  const ay1 = s.honorario ? fmt(s.honorario*0.20) : '—';
+  const badgeClass = s.status==='confirmed'?'badge-confirmed':s.status==='cancelled'?'badge-cancelled':'badge-pending';
+  const badgeTxt = s.status==='confirmed'?'Confirmada':s.status==='cancelled'?'Cancelada':'Pendiente';
+  return `<div class="surg-card ${s.status||'pending'}" onclick="openDetail('${s.id}')">
+    <div class="surg-top">
+      <div>
+        <div class="surg-patient">${s.patient}</div>
+        <div class="surg-diag">${s.diagnosis}</div>
+      </div>
+      <span class="surg-badge ${badgeClass}">${badgeTxt}</span>
+    </div>
+    <div class="surg-meta">
+      <span><i class="ti ti-calendar"></i>${fmtDate(s.date)}</span>
+      <span><i class="ti ti-clock"></i>${s.time}</span>
+      <span><i class="ti ti-building"></i>${s.hospital||'—'}</span>
+    </div>
+    <div class="surg-footer">
+      <div class="avatars">${avatars}</div>
+      <div class="surg-hon">Ay: ${ay1}</div>
+    </div>
+  </div>`;
+}
+
+// ── STATS ─────────────────────────────────────────────────────────────────────
+function renderStats() {
+  const total = surgeries.length;
+  const confirmed = surgeries.filter(s=>s.status==='confirmed').length;
+  const totalHon = surgeries.reduce((a,s)=>a+(+s.honorario||0),0);
+  const poolAy = surgeries.reduce((a,s)=>a+(+s.honorario||0)*0.30,0);
+  document.getElementById('stats-grid').innerHTML=[
+    {l:'Total cirugías',v:total,s:'registradas'},
+    {l:'Confirmadas',v:confirmed,s:`${total?Math.round(confirmed/total*100):0}% del total`},
+    {l:'Honorarios totales',v:fmt(totalHon),s:'cirujanos principales'},
+    {l:'Pool ayudantías',v:fmt(poolAy),s:'estimado del mes'},
+  ].map(x=>`<div class="stat-card"><div class="stat-lbl">${x.l}</div><div class="stat-val">${x.v}</div><div class="stat-sub">${x.s}</div></div>`).join('');
+
+  let shtml = '<div class="section-lbl" style="margin-top:4px">Participación por cirujano</div>';
+  SURGEONS.forEach(sg=>{
+    const asMain = surgeries.filter(s=>s.principalId===sg.id).length;
+    const confirmed = surgeries.filter(s=>{const r=(s.responses||{})[sg.id]; return r==='yes';}).length;
+    shtml += `<div class="surg-check">
+      <div class="surg-check-name">
+        <div class="av" style="background:${sg.color};color:#fff;width:28px;height:28px;font-size:10px;margin:0">${sg.initials}</div>
+        ${sg.name}
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:12px;color:var(--text-dim)">${asMain} como principal</div>
+        <div style="font-size:11px;color:var(--text-muted)">${confirmed} confirmadas como ayudante</div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('stats-surgeons').innerHTML = shtml;
+}
+
+// ── NEW SURGERY ───────────────────────────────────────────────────────────────
+function openNewSurgery(prefillDate) {
+  editingId = null;
+  document.getElementById('modal-new-title').textContent = 'Nueva Cirugía';
+  document.getElementById('f-patient').value='';
+  document.getElementById('f-diag').value='';
+  document.getElementById('f-date').value=prefillDate||new Date().toISOString().slice(0,10);
+  document.getElementById('f-time').value='08:00';
+  document.getElementById('f-hospital').value='';
+  document.getElementById('f-honorario').value='';
+  document.getElementById('f-notas').value='';
+  const sel=document.getElementById('f-principal');
+  sel.innerHTML=SURGEONS.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  openModal('modal-new');
+}
+function saveSurgery() {
+  const patient=document.getElementById('f-patient').value.trim();
+  const diag=document.getElementById('f-diag').value.trim();
+  const date=document.getElementById('f-date').value;
+  const time=document.getElementById('f-time').value;
+  if(!patient||!date){alert('Completa paciente y fecha');return;}
+  const surgery = {
+    id: editingId||'s'+Date.now(),
+    patient, diagnosis:diag, date, time,
+    hospital: document.getElementById('f-hospital').value.trim(),
+    principalId: document.getElementById('f-principal').value,
+    honorario: +document.getElementById('f-honorario').value||0,
+    notas: document.getElementById('f-notas').value.trim(),
+    status:'pending',
+    responses:{},
+    createdAt: editingId?(surgeries.find(s=>s.id===editingId)||{}).createdAt:Date.now()
+  };
+  if(editingId){ const idx=surgeries.findIndex(s=>s.id===editingId); if(idx>=0){surgery.responses=surgeries[idx].responses||{};surgery.status=surgeries[idx].status;surgeries[idx]=surgery;} }
+  else surgeries.push(surgery);
+  saveData(surgeries);
+  closeModal('modal-new');
+  renderCalendar(); if(activeTab==='list')renderList(); if(activeTab==='stats')renderStats();
+}
+
+// ── DETAIL ────────────────────────────────────────────────────────────────────
+function openDetail(id) {
+  const s = surgeries.find(x=>x.id===id); if(!s) return;
+  const principal = SURGEONS.find(x=>x.id===s.principalId)||{name:'?',color:'#888',bg:'#eee'};
+  const responses = s.responses||{};
+  const ay1 = s.honorario?fmt(s.honorario*0.20):'—';
+  const ay2 = s.honorario?fmt(s.honorario*0.10):'—';
+  const confirmLink = `https://elfish50.github.io/agenda/?confirm=${s.id}`;
+  const waMsg = encodeURIComponent(`🔪 *CIRUGÍA PROGRAMADA*\n\nPaciente: ${s.patient}\nDx: ${s.diagnosis}\nFecha: ${fmtDate(s.date)} ${s.time}\nHospital: ${s.hospital||'—'}\nCirujano: ${principal.name}\nHonorario: ${fmt(s.honorario)} | 1er Ay: ${ay1}\n\n¿Puedes asistir como ayudante?\n👇 Confirma aquí:\n${confirmLink}`);
+
+  let body = `
+    <div class="detail-section">
+      <div class="detail-section-title">Información del caso</div>
+      <div class="detail-row"><span class="dk">Paciente</span><span class="dv">${s.patient}</span></div>
+      <div class="detail-row"><span class="dk">Diagnóstico</span><span class="dv" style="max-width:60%;text-align:right">${s.diagnosis}</span></div>
+      <div class="detail-row"><span class="dk">Fecha y hora</span><span class="dv">${fmtDate(s.date)} · ${s.time}</span></div>
+      <div class="detail-row"><span class="dk">Hospital</span><span class="dv">${s.hospital||'—'}</span></div>
+      <div class="detail-row"><span class="dk">Cirujano principal</span><span class="dv" style="color:${principal.color}">${principal.name}</span></div>
+      <div class="detail-row"><span class="dk">Honorario principal</span><span class="dv">${fmt(s.honorario)}</span></div>
+      <div class="detail-row"><span class="dk">1er ayudante (20%)</span><span class="dv" style="color:var(--teal)">${ay1}</span></div>
+      <div class="detail-row"><span class="dk">2do ayudante (10%)</span><span class="dv" style="color:var(--slate)">${ay2}</span></div>
+      ${s.notas?`<div class="detail-row"><span class="dk">Notas</span><span class="dv" style="max-width:65%;text-align:right;font-size:12px;color:var(--text-dim)">${s.notas}</span></div>`:''}
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">Respuestas del grupo</div>
+      ${SURGEONS.map(sg=>{
+        const r=responses[sg.id]||'none';
+        const rLabel=r==='yes'?'✓ Confirma':r==='no'?'✗ No asiste':r==='maybe'?'~ Tentativo':'Sin respuesta';
+        const rColor=r==='yes'?'var(--teal)':r==='no'?'var(--red)':r==='maybe'?'var(--amber)':'var(--text-muted)';
+        return `<div class="surg-check">
+          <div class="surg-check-name">
+            <div class="av" style="background:${sg.color};color:#fff;width:28px;height:28px;font-size:10px;margin:0">${sg.initials}</div>
+            ${sg.name}
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:12px;color:${rColor};font-weight:500">${rLabel}</span>
+            ${sg.id!==s.principalId?`<button onclick="setResponse('${s.id}','${sg.id}','yes')" class="resp-btn yes" style="padding:4px 8px;font-size:10px">✓</button>
+            <button onclick="setResponse('${s.id}','${sg.id}','no')" class="resp-btn no" style="padding:4px 8px;font-size:10px">✗</button>`:'<span style="font-size:10px;color:var(--text-muted)">Principal</span>'}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="response-row" id="status-btns-${s.id}">
+      <button class="resp-btn ${s.status==='confirmed'?'yes':''}" onclick="setStatus('${s.id}','confirmed')">✓ Confirmar</button>
+      <button class="resp-btn ${s.status==='pending'?'maybe':''}" onclick="setStatus('${s.id}','pending')">~ Pendiente</button>
+      <button class="resp-btn ${s.status==='cancelled'?'no':''}" onclick="setStatus('${s.id}','cancelled')">✗ Cancelar</button>
+    </div>
+    <a href="https://wa.me/?text=${waMsg}" target="_blank" class="wa-btn">
+      <i class="ti ti-brand-whatsapp"></i> Notificar por WhatsApp
+    </a>
+    <button class="btn-secondary" onclick="editSurgery('${s.id}')"><i class="ti ti-edit"></i> Editar</button>
+    <button onclick="deleteSurgery('${s.id}')" style="width:100%;padding:10px;border-radius:8px;background:transparent;color:var(--red);border:1px solid var(--red);font-size:13px;cursor:pointer;margin-top:8px">
+      <i class="ti ti-trash"></i> Eliminar
+    </button>`;
+
+  document.getElementById('detail-title').textContent = s.patient;
+  document.getElementById('detail-body').innerHTML = body;
+  openModal('modal-detail');
+}
+
+function setResponse(sid, uid, val) {
+  const s=surgeries.find(x=>x.id===sid); if(!s)return;
+  if(!s.responses)s.responses={};
+  s.responses[uid]=val; saveData(surgeries);
+  openDetail(sid);
+  if(activeTab==='calendar')renderCalendar();
+}
+function setStatus(sid, val) {
+  const s=surgeries.find(x=>x.id===sid); if(!s)return;
+  s.status=val; saveData(surgeries); openDetail(sid);
+  if(activeTab==='calendar')renderCalendar();
+  if(activeTab==='list')renderList();
+}
+function editSurgery(id) {
+  const s=surgeries.find(x=>x.id===id); if(!s)return;
+  editingId=id;
+  closeModal('modal-detail');
+  setTimeout(()=>{
+    document.getElementById('modal-new-title').textContent='Editar Cirugía';
+    document.getElementById('f-patient').value=s.patient;
+    document.getElementById('f-diag').value=s.diagnosis;
+    document.getElementById('f-date').value=s.date;
+    document.getElementById('f-time').value=s.time;
+    document.getElementById('f-hospital').value=s.hospital||'';
+    document.getElementById('f-honorario').value=s.honorario||'';
+    document.getElementById('f-notas').value=s.notas||'';
+    const sel=document.getElementById('f-principal');
+    sel.innerHTML=SURGEONS.map(sg=>`<option value="${sg.id}"${sg.id===s.principalId?' selected':''}>${sg.name}</option>`).join('');
+    openModal('modal-new');
+  },200);
+}
+function deleteSurgery(id) {
+  if(!confirm('¿Eliminar esta cirugía?'))return;
+  surgeries=surgeries.filter(s=>s.id!==id); saveData(surgeries);
+  closeModal('modal-detail');
+  renderCalendar(); if(activeTab==='list')renderList(); if(activeTab==='stats')renderStats();
+}
+
+// ── NOTIFY ────────────────────────────────────────────────────────────────────
+function openNotify() {
+  const upcoming = surgeries.filter(s=>s.date>=new Date().toISOString().slice(0,10)&&s.status!=='cancelled').slice(0,5);
+  const msg = upcoming.length
+    ? `📅 *AGENDA QUIRÚRGICA JFP GROUP*\n\n${upcoming.map(s=>`• ${fmtDate(s.date)} ${s.time} — ${s.patient} (${s.diagnosis}) — ${SURGEONS.find(x=>x.id===s.principalId)?.name||'?'}`).join('\n')}\n\nConfirma tu asistencia:
+https://elfish50.github.io/agenda/`
+    : 'Hola equipo, no hay cirugías próximas programadas. Actualicen la agenda:
+https://elfish50.github.io/agenda/';
+  document.getElementById('wa-msg').value=msg;
+  const contacts=SURGEONS.map(sg=>`<a href="https://wa.me/${PHONES[sg.id]}?text=${encodeURIComponent(document.getElementById('wa-msg').value)}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);text-decoration:none;color:var(--text)">
+    <div class="av" style="background:${sg.color};color:#fff;width:32px;height:32px;font-size:11px;margin:0;flex-shrink:0">${sg.initials}</div>
+    <span style="font-size:13px;flex:1">${sg.name}</span>
+    <span style="color:#25D366;font-size:12px">Enviar <i class="ti ti-send"></i></span>
+  </a>`).join('');
+  document.getElementById('wa-contacts').innerHTML=contacts;
+  openModal('modal-notify');
+}
+
+
+// ── QUICK CONFIRM (desde URL ?confirm=ID) ────────────────────────────────────
+let _confirmSurgeryId = null;
+
+function openQuickConfirm(surgeryId) {
+  const s = surgeries.find(x=>x.id===surgeryId);
+  if(!s) { alert('Cirugía no encontrada. Puede haber sido eliminada.'); return; }
+  _confirmSurgeryId = surgeryId;
+  const principal = SURGEONS.find(x=>x.id===s.principalId)||{name:'?'};
+  document.getElementById('confirm-info').innerHTML =
+    `<b>${s.patient}</b><br>${s.diagnosis}<br>📅 ${fmtDate(s.date)} · ${s.time}<br>🏥 ${s.hospital||'—'}<br>👨‍⚕️ ${principal.name}`;
+  const sel = document.getElementById('confirm-surgeon');
+  sel.innerHTML = '<option value="">— Selecciona tu nombre —</option>' +
+    SURGEONS.filter(sg=>sg.id!==s.principalId).map(sg=>`<option value="${sg.id}">${sg.name}</option>`).join('');
+  document.getElementById('confirm-result').style.display='none';
+  openModal('modal-confirm');
+}
+
+function quickConfirm(val) {
+  const surgeonId = document.getElementById('confirm-surgeon').value;
+  if(!surgeonId){ alert('Por favor selecciona tu nombre primero.'); return; }
+  const s = surgeries.find(x=>x.id===_confirmSurgeryId);
+  if(!s) return;
+  if(!s.responses) s.responses={};
+  s.responses[surgeonId] = val;
+  saveData(surgeries);
+  const labels = {yes:'✓ Confirmado — ¡nos vemos!', maybe:'~ Tentativo registrado', no:'✗ Ausencia registrada'};
+  const colors = {yes:'var(--teal)', maybe:'var(--amber)', no:'var(--red)'};
+  const res = document.getElementById('confirm-result');
+  res.style.display='block';
+  res.style.color=colors[val];
+  res.style.background=val==='yes'?'rgba(29,158,117,.1)':val==='maybe'?'rgba(232,160,48,.1)':'rgba(226,75,74,.1)';
+  res.textContent=labels[val];
+  renderCalendar();
+  if(activeTab==='list') renderList();
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function openModal(id){document.getElementById(id).classList.add('show');}
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+function initApp() {
+  document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('show');}));
+  renderCalendar();
+
+  // Detect ?confirm=ID in URL (from WhatsApp link)
+  const urlParams = new URLSearchParams(window.location.search);
+  const confirmId = urlParams.get('confirm');
+  if(confirmId) {
+    setTimeout(()=>openQuickConfirm(confirmId), 400);
+  }
+
+  // Demo data if empty
+  if(!surgeries.length){
+    const today=new Date().toISOString().slice(0,10);
+    const next=(d)=>{const dt=new Date();dt.setDate(dt.getDate()+d);return dt.toISOString().slice(0,10);};
+    surgeries=[
+      {id:'demo1',patient:'Alejandro Hernández',diagnosis:'Clavo tibial — retiro tornillos + Poller',date:today,time:'09:00',hospital:'Hospital Ángeles Interlomas Q3',principalId:'jf',honorario:40000,notas:'BLEE Pseudomona en cultivo. Seguimiento con ID.',status:'confirmed',responses:{ay:'yes',jf:'yes',aa:'maybe',sa:'none',sg:'no'},createdAt:Date.now()},
+      {id:'demo2',patient:'Ivanna Jano Feldman',diagnosis:'Artroscopía rodilla — plica suprapatelar',date:next(3),time:'08:00',hospital:'Clínica B — Quirófano 1',principalId:'jf',honorario:35000,notas:'Plica postraumática confirmada por RM.',status:'pending',responses:{ay:'yes',jf:'yes',aa:'none',sa:'maybe',sg:'none'},createdAt:Date.now()},
+      {id:'demo3',patient:'Paciente Demo',diagnosis:'RAFI fémur distal',date:next(5),time:'11:00',hospital:'Hospital Satélite',principalId:'ay',honorario:55000,notas:'',status:'pending',responses:{},createdAt:Date.now()},
+    ];
+    saveData(surgeries);
+    renderCalendar();
+  }
+}
+
+if(document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
+</script>
+</body>
+</html>
